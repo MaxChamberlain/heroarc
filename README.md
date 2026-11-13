@@ -50,6 +50,15 @@ Edit `.env`: set `TIMEZONE`, your calorie and protein goals, and `ALLOWED_EMAIL`
 8. Open the printed address on your phone. Enter your email, then the code Cloudflare emails you. Add it to your home screen (iPhone: Share, then Add to Home Screen. Android: menu, Install app).
    - Optional: Google sign-in instead of the emailed code is in Zero Trust, Settings, Authentication.
 
+## The Excel / Google Sheets template
+`template/HeroArc_Health_Log_Template.xlsx` is a ready-made workbook in the same dark teal and clay style as the app. It has seven tabs: README, Calculator, Settings, Oura, Nutrition Log, Weight Log and Training Log.
+
+- The log tabs are blank. The Calculator holds **made-up example numbers** (a 180 lb person on a cut) so you can see how it works. Replace them with yours.
+- The Calculator turns bodyweight, goal (Cut, Recomp or Bulk), a maintenance multiplier and a protein-per-lb figure into daily calorie and protein targets. The Settings tab picks those up and the app reads them from there. The workbook's own README tab has a step-by-step guide.
+- Two ways to use it: run `python3 scripts/setup_sheet.py` (builds a plain version in your Google account), or open Google Sheets, choose File > Import > Upload the .xlsx, then copy the sheet ID from its address into `.env` as `SHEET_ID=...`.
+- Rebuild it from source with `pip install openpyxl` then `python3 tools/build_template_xlsx.py`.
+- Note: `setup_sheet.py` makes a simpler, unstyled sheet with goals typed on the Settings tab. The .xlsx adds the Calculator and the styling.
+
 ## Daily use (the logging scripts)
 Run these from the folder, or have your AI run them for you:
 ```
