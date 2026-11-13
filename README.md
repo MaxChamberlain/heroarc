@@ -1,0 +1,84 @@
+# HeroArc
+
+A private health dashboard for your phone. Your Oura ring, weight, food and training go into **one Google Sheet that you own**, and a small app shows them on a locked-down web page that only your email can open.
+
+- **Runs on your own accounts.** Google, Oura and Cloudflare are all yours. Nothing is shared with anyone else, and nothing here phones home.
+- **Costs nothing** on free plans (Cloudflare Workers, Google Sheets, Oura developer app). Any AI you use to log food is your own.
+- **Your AI does the logging.** The scripts below are the "hands". Point your own AI assistant at this folder and have it run them when you text it a weight, a meal photo or a workout.
+
+## What you get
+- Phone and desktop app: readiness, sleep, stress, activity, weight, calories and protein against your goals, energy balance (calories in minus Oura's calories out), weekly balance, and a 14-day sleep/readiness chart. Browse back up to 90 days.
+- A Google Sheet with tabs: Settings, Oura, Nutrition Log, Weight Log, Training Log.
+- Scripts: `sync.py` (Oura to sheet to app), `log_food.py`, `log_weight.py`, `log_training.py`.
+
+## What you need first
+- A computer or small server that can run Python 3.9+ and Node 18+ (Node is only used to syntax-check the page before it is uploaded) and stay on, or run on a schedule.
+- An Oura ring with membership.
+- A Google account, a Cloudflare account (free), a GitHub account if you want your own copy of this code.
+
+## Setup (about 45 minutes, once)
+
+### 1. Get the code and make your settings file
+```
+git clone <this repo> heroarc && cd heroarc
+cp .env.example .env && chmod 600 .env
+```
+Edit `.env`: set `TIMEZONE`, your calorie and protein goals, and `ALLOWED_EMAIL` (the one email that may open the app). **`.env` holds secrets. It is ignored by git. Never commit it, paste it in a chat, or share it.**
+
+### 2. Google (your sheet)
+1. Go to console.cloud.google.com, create a project, and **enable the Google Sheets API**.
+2. OAuth consent screen: External, Testing, and add your own Gmail as a test user.
+3. Credentials, Create credentials, **OAuth client ID**, type **Desktop app**. Put the client id and secret in `.env` as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+4. Run `python3 scripts/auth_google.py`. Open the link, allow access, and when the browser lands on a "can't connect to localhost" page, paste that full address back into the terminal. (That error is expected.)
+5. Run `python3 scripts/setup_sheet.py`. It creates **HeroArc Health Log** in your Drive and saves its id. Edit your goals on the **Settings** tab at any time.
+
+### 3. Oura
+1. Go to cloud.ouraring.com/oauth/applications and create an app. Set the **redirect URI to exactly** `http://localhost:8080/callback` and tick all the scopes (email, personal, daily, heartrate, workout, session, spo2, tag, stress).
+2. Put the client id and secret in `.env` as `OURA_CLIENT_ID` and `OURA_CLIENT_SECRET`.
+3. Run `python3 scripts/auth_oura.py` and follow the same open-link, paste-back-the-address flow. Oura codes are single-use and expire fast, so paste right away.
+4. Backfill and test: `python3 scripts/sync.py --days 60`. Your Oura tab should fill.
+   - Note: Oura only has your latest sleep after your ring has synced through the Oura app on your phone. See "Keeping it fresh" below.
+
+### 4. Cloudflare (the private app)
+1. Sign up at cloudflare.com (free). In the dashboard, open **Zero Trust** and choose the Free plan. This is needed for the login gate.
+2. Create an API token (My Profile, API Tokens, Create Custom Token) with **Account** permissions: *Workers Scripts: Edit*, *Workers KV Storage: Edit*, *Access: Apps and Policies: Edit*. Scope it to your account only.
+3. Put `CLOUDFLARE_ACCOUNT_ID` (from the dashboard sidebar) and `CLOUDFLARE_API_TOKEN` in `.env`.
+4. Try it without changing anything: `python3 scripts/deploy.py --dry-run`
+5. Deploy: `python3 scripts/deploy.py`. If it says you have no workers.dev subdomain, set `WORKERS_SUBDOMAIN=` to a unique name in `.env` and re-run.
+6. **The gate test must pass.** The script prints three lines: *no login*, *forged header*, *forged cookie*. Each must say `302`. If any is not 302, **stop**: do not load data until it is fixed.
+7. Push your first data: `python3 scripts/app_push.py`
+8. Open the printed address on your phone. Enter your email, then the code Cloudflare emails you. Add it to your home screen (iPhone: Share, then Add to Home Screen. Android: menu, Install app).
+   - Optional: Google sign-in instead of the emailed code is in Zero Trust, Settings, Authentication.
+
+## Daily use (the logging scripts)
+Run these from the folder, or have your AI run them for you:
+```
+python3 scripts/log_weight.py 189.2
+python3 scripts/log_food.py --meal Lunch --items "chicken, rice" --kcal 650 --p 48 --c 70 --f 14 --conf Medium --source "photo estimate"
+python3 scripts/log_training.py --workout "Push A" --exercise "Bench press" --lb 185 --sets 4 --reps 6
+```
+Each one prints a single line saying what was logged. `log_food.py` and `log_weight.py` refresh the app straight away. `--dry-run` on `log_food.py` checks everything without writing.
+
+### Giving the work to your AI
+Tell your assistant: "You operate HeroArc in this folder. Use the scripts in `scripts/`. Never print or send `.env`. Estimate food from photos and show me a breakdown (per item grams, kcal, protein/carbs/fat, a confidence level, the biggest uncertainty). Only log after I say so. Use my timezone." That is the whole contract.
+
+## Keeping it fresh
+Run `python3 scripts/sync.py` every 15 minutes (cron example: `*/15 6-22 * * * cd ~/heroarc && python3 scripts/sync.py >> sync.log 2>&1`).
+
+**Oura only uploads sleep when its phone app syncs with the ring.** The API has no "sync now" call, so to get your sleep score without opening the app: on iPhone, turn on Settings, Oura, Background App Refresh, Bluetooth, Location Always, and Cellular Data, turn off Low Power Mode, and do not swipe the Oura app away. Activity and stress update more readily on their own.
+
+## Security notes
+- The app is behind Cloudflare Access: only `ALLOWED_EMAIL` can open it, and the Worker refuses any request that did not come through Access.
+- Your Google and Oura keys stay on **your** machine. Cloudflare only holds a small JSON snapshot of the numbers shown in the app.
+- Never commit `.env` or `oura/tokens.json` (both are in `.gitignore`). If you ever do, rotate the keys.
+- Health data on a web server is personal data. Keep the allow list to just you unless you decide otherwise.
+
+## Troubleshooting
+- **Oura 400 `invalid_request`:** the redirect URI in the Oura portal must match `OURA_REDIRECT_URI` character for character, and the code is single-use. Start `auth_oura.py` again.
+- **No refresh token from Google:** remove the app at myaccount.google.com/permissions and re-run `auth_google.py`.
+- **Today box refuses to write:** do not edit `Nutrition Log` columns M to P; the scripts read the Today box there.
+- **App shows yesterday's sleep:** the ring has not synced through the Oura app yet.
+- **Gate not 302:** do not continue; check the Access app in Zero Trust, Access, Applications.
+
+## Known limits
+This is a personal setup, not a product. The scripts have only been exercised against synthetic data and against the author's own accounts. Expect rough edges on first run, and read the printed errors.
