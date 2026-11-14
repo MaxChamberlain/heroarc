@@ -159,6 +159,17 @@ h1{text-shadow:3px 3px 0 #000,0 0 19.8px #c48a605e!important}
 header::before{text-shadow:0 0 11px #b0694aa8,2px 2px 0 #000!important}
 .brand{display:block;font:900 12px "Zen Old Mincho",serif;letter-spacing:.34em;text-transform:uppercase;color:#c48a60!important;margin-bottom:4px;text-shadow:1px 1px 0 #000}.card .ring .v span{font-size:9.5px!important;letter-spacing:.06em!important;white-space:nowrap;line-height:1;margin-top:2px}
 .card .ring .v b{font-size:34px!important;line-height:1}
+
+.cw{position:relative;touch-action:pan-y;-webkit-user-select:none;user-select:none;cursor:crosshair}
+.cw svg.chart{display:block}
+.cx{position:absolute;inset:0;pointer-events:none}
+.cx .pt{position:absolute;width:6px;height:6px;border-radius:50%;transform:translate(-50%,-50%);opacity:.9;box-shadow:0 0 0 2px #0a1a21}
+.cx .gd{display:none;position:absolute;top:0;bottom:0;width:0;border-left:1px dashed #ffffff55}
+.cx .hd{display:none;position:absolute;width:12px;height:12px;border-radius:50%;border:2px solid;background:#0a1a21;transform:translate(-50%,-50%);box-shadow:0 0 10px var(--c)}
+.cx .tip{display:none;position:absolute;z-index:5;white-space:nowrap;background:#0a1a21;border:1px solid #2F6272;border-radius:6px;padding:6px 9px;font-size:12px;line-height:1.5;color:#E8DCC6;box-shadow:0 6px 18px #000a}
+.cx .tip b{display:block;font-weight:700;color:#A4B6B6;font-size:11px;letter-spacing:.04em;margin-bottom:1px}
+.cx .tip span{display:block}.cx .tip i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}.cx .tip em{font-style:normal;font-weight:700;margin-left:4px}
+.cx .vl{position:absolute;font-size:11px;font-weight:700;color:#E8DCC6;text-shadow:0 1px 2px #000,0 0 6px #000;white-space:nowrap}
 </style></head><body>
 <header><div><small class="brand">HeroArc</small><small id="date"></small><h1 id="ttl">Today</h1></div><small id="upd"></small></header>
 <div class="nav"><button id="prev" aria-label="Previous day">‹</button><div class="mid"><input type="date" id="pick"><button class="today" id="tdy">Today</button></div><button id="next" aria-label="Next day">›</button></div>
@@ -192,10 +203,10 @@ function view(){
  const win=[];for(let i=13;i>=0;i--){const k=shift(sel,-i),x=days[k]||{};win.push({d:k,sleep:x.sleep??null,readiness:x.readiness??null,weight:x.weight??null})}
  const w=win.map(x=>x.weight).filter(x=>x!=null),wmin=(w.length?Math.min(...w):0)-.5,wmax=(w.length?Math.max(...w):1)+.5;
  const wt=d.weight;
- $('#app').innerHTML=`
+ window.__WIN=win;$('#app').innerHTML=`
 <div class="card"><h2>Health</h2><div class="rings">${ring((r||0)/100,'#c48a60',r??'—','Readiness')}${ring((s||0)/100,'#3c7382',s??'—','Sleep score')}</div>
 <div class="row"><span class="mut">Bedtime</span><b style="font-size:17px">${tm(bd)}</b></div><div class="row"><span class="mut">Wake time</span><b style="font-size:17px">${tm(wk)}</b></div><div class="row"><span class="mut">Slept</span><b style="font-size:17px">${sh==null?'—':sh.toFixed(1)+' h'}</b></div><div class="row"><span class="mut">HRV</span><b style="font-size:17px">${hv==null?'—':Math.round(hv)+' ms'}</b></div>${note}</div>
-<div class="card"><h2>Weight, 14 days to ${new Date(sel+'T12:00').toLocaleDateString(undefined,{month:'short',day:'numeric'})}</h2><div class="row"><b>${wt==null?'—':wt.toFixed(1)+' lb'}</b><span class="mut">${w.length>1?((w.at(-1)-w[0]>0?'+':'')+(w.at(-1)-w[0]).toFixed(1)+' lb'):'not enough days yet'}</span></div><svg class="chart" viewBox="0 0 300 90" preserveAspectRatio="none">${line(win,'weight','#c48a60',wmin,wmax)}</svg></div>
+<div class="card"><h2>Weight, 14 days to ${new Date(sel+'T12:00').toLocaleDateString(undefined,{month:'short',day:'numeric'})}</h2><div class="row"><b>${wt==null?'—':wt.toFixed(1)+' lb'}</b><span class="mut">${w.length>1?((w.at(-1)-w[0]>0?'+':'')+(w.at(-1)-w[0]).toFixed(1)+' lb'):'not enough days yet'}</span></div><svg class="chart" data-s="weight" viewBox="0 0 300 90" preserveAspectRatio="none">${line(win,'weight','#c48a60',wmin,wmax)}</svg></div>
 <div class="card"><h2>Stress</h2>${(()=>{const sm=d.stressSummary,st=d.stressMin,rc=d.recoverMin;
  if(!sm&&!(st>0)&&!(rc>0))return '<div class="mut">'+(isToday?'Not enough data yet today. Oura scores stress after the day has a few hours of wear.':'No stress data for this day. The ring may not have been worn.')+'</div>';
  const lab={restored:'Restored',normal:'Normal',stressful:'Stressful'}[sm]||'Unscored',col={restored:'var(--green)',normal:'var(--amber)',stressful:'#984a5c'}[sm]||'var(--mut)';
@@ -233,7 +244,7 @@ function view(){
  <div class="row"><span class="mut">Predicted weight change</span><b style="font-size:17px">${exp<=0?'−':'+'}${Math.abs(exp).toFixed(1)} lb</b></div>
  <div class="row"><span class="mut">Actual weight change</span><b style="font-size:17px">${wchg==null?'—':(wchg>0?'+':wchg<0?'−':'')+Math.abs(wchg).toFixed(1)+' lb'}</b></div>
  <small class="mut">${n<4?'Fewer than 4 logged days, so treat this as rough. ':''}Predicted = net kcal ÷ 3,500. Daily weight swings of 1–3 lb are normal water changes, so judge by trend over a few weeks.</small>`})()}</div>
-<div class="card"><h2>Sleep and readiness, 14 days</h2><svg class="chart" viewBox="0 0 300 90" preserveAspectRatio="none">${line(win,'sleep','#3c7382',50,100)}${line(win,'readiness','#c48a60',50,100)}</svg><div class="legend"><span><i class="dot" style="background:#3c7382"></i>Sleep</span><span><i class="dot" style="background:#c48a60"></i>Readiness</span></div></div>`;
+<div class="card"><h2>Sleep and readiness, 14 days</h2><svg class="chart" data-s="sleep,readiness" viewBox="0 0 300 90" preserveAspectRatio="none">${line(win,'sleep','#3c7382',50,100)}${line(win,'readiness','#c48a60',50,100)}</svg><div class="legend"><span><i class="dot" style="background:#3c7382"></i>Sleep</span><span><i class="dot" style="background:#c48a60"></i>Readiness</span></div></div>`;
 }
 $('#prev').onclick=()=>{sel=shift(sel,-1);view()};$('#next').onclick=()=>{sel=shift(sel,1);view()};$('#tdy').onclick=()=>{sel=D.date;view()};
 $('#pick').onchange=e=>{if(e.target.value){sel=e.target.value;view()}};
@@ -246,4 +257,54 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(
 (function(){const M={health:'健康',weight:'体重',stress:'緊張',activity:'活動',nutrition:'栄養',energy:'収支',weekly:'週間',sleep:'睡眠'};
 const go=()=>document.querySelectorAll('#app .card h2').forEach(h=>{if(h.querySelector('.k'))return;const k=M[(h.textContent||'').trim().split(/[ ,]/)[0].toLowerCase()];if(k){const s=document.createElement('span');s.className='k';s.textContent=k;h.appendChild(s)}});
 new MutationObserver(go).observe(document.getElementById('app'),{childList:true});go()})();
+
+/* chart readout: hover (mouse), touch-and-drag (phone), dots, and printed high/low/latest on the weight line */
+(function(){
+ const SER={weight:{lab:'Weight',unit:' lb',dec:1,col:'#c48a60'},sleep:{lab:'Sleep',unit:'',dec:0,col:'#3c7382'},readiness:{lab:'Readiness',unit:'',dec:0,col:'#c48a60'}};
+ const yp=(v,mn,mx)=>(84-((v-mn)/(mx-mn))*78)/90*100;
+ const fd=d=>new Date(d+'T12:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+ const hideAll=()=>document.querySelectorAll('.cx .tip,.cx .gd,.cx .hd').forEach(e=>e.style.display='none');
+ function attach(svg){
+  if(svg.parentNode.classList&&svg.parentNode.classList.contains('cw'))return;
+  const win=window.__WIN||[],n=win.length;if(n<2)return;
+  const keys=(svg.dataset.s||'').split(',').filter(Boolean);if(!keys.length)return;
+  const rng={};keys.forEach(k=>{const v=win.map(x=>x[k]).filter(x=>x!=null);
+   rng[k]=k==='weight'?{mn:(v.length?Math.min(...v):0)-.5,mx:(v.length?Math.max(...v):1)+.5}:{mn:50,mx:100}});
+  const wrap=document.createElement('div');wrap.className='cw';svg.parentNode.insertBefore(wrap,svg);wrap.appendChild(svg);
+  const ov=document.createElement('div');ov.className='cx';wrap.appendChild(ov);
+  const gd=document.createElement('div');gd.className='gd';ov.appendChild(gd);
+  const tip=document.createElement('div');tip.className='tip';ov.appendChild(tip);
+  const hds=keys.map(k=>{const e=document.createElement('div');e.className='hd';e.style.borderColor=SER[k].col;e.style.setProperty('--c',SER[k].col);ov.appendChild(e);return e});
+  // persistent dots on every real data point
+  keys.forEach(k=>win.forEach((p,i)=>{if(p[k]==null)return;const d=document.createElement('div');d.className='pt';d.style.left=(i/(n-1)*100)+'%';d.style.top=yp(p[k],rng[k].mn,rng[k].mx)+'%';d.style.background=SER[k].col;ov.appendChild(d)}));
+  // printed values on the weight line: high, low, latest
+  if(keys.length===1&&keys[0]==='weight'){
+   const idx=win.map((p,i)=>p.weight==null?-1:i).filter(i=>i>=0);
+   if(idx.length){
+    const hi=idx.reduce((a,b)=>win[b].weight>win[a].weight?b:a),lo=idx.reduce((a,b)=>win[b].weight<win[a].weight?b:a),last=idx[idx.length-1];
+    const lab=new Map();[[hi,'up'],[lo,'dn'],[last,'up']].forEach(([i,pos])=>{if(!lab.has(i))lab.set(i,pos)});
+    lab.forEach((pos,i)=>{const t=document.createElement('div');t.className='vl';t.textContent=win[i].weight.toFixed(1);
+     const x=i/(n-1)*100;t.style.left=x+'%';t.style.top=yp(win[i].weight,rng.weight.mn,rng.weight.mx)+'%';
+     t.style.transform=`translate(${x<9?'-4px':x>91?'calc(-100% + 4px)':'-50%'},${pos==='up'?'-150%':'55%'})`;ov.appendChild(t)});
+   }}
+  function show(ev){
+   const r=wrap.getBoundingClientRect();let f=(ev.clientX-r.left)/r.width;f=Math.max(0,Math.min(1,f));
+   let best=-1,bd=9;win.forEach((p,i)=>{if(!keys.some(k=>p[k]!=null))return;const dd=Math.abs(i/(n-1)-f);if(dd<bd){bd=dd;best=i}});
+   if(best<0)return;const p=win[best],x=best/(n-1)*100;
+   gd.style.display='block';gd.style.left=x+'%';
+   keys.forEach((k,j)=>{const h=hds[j];if(p[k]==null){h.style.display='none';return}h.style.display='block';h.style.left=x+'%';h.style.top=yp(p[k],rng[k].mn,rng[k].mx)+'%'});
+   tip.innerHTML='<b>'+fd(p.d)+'</b>'+keys.map(k=>p[k]==null?'':'<span><i style="background:'+SER[k].col+'"></i>'+SER[k].lab+' <em>'+Number(p[k]).toFixed(SER[k].dec)+SER[k].unit+'</em></span>').join('');
+   tip.style.display='block';const tw=tip.offsetWidth,W=r.width;let left=x/100*W-tw/2;left=Math.max(0,Math.min(W-tw,left));
+   tip.style.left=left+'px';tip.style.top='-8px';tip.style.transform='translateY(-100%)';
+  }
+  wrap.addEventListener('pointerdown',e=>{hideAll();show(e)});
+  wrap.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||e.buttons||e.pointerType==='touch'||e.pointerType==='pen')show(e)});
+  wrap.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')hideAll()});
+  // keep the day-to-day swipe from firing while a finger is on a chart
+  ['touchstart','touchend','touchmove'].forEach(t=>wrap.addEventListener(t,e=>e.stopPropagation(),{passive:true}));
+ }
+ const run=()=>document.querySelectorAll('#app svg.chart').forEach(attach);
+ document.addEventListener('pointerdown',e=>{if(!e.target.closest||!e.target.closest('.cw'))hideAll()});
+ new MutationObserver(run).observe(document.getElementById('app'),{childList:true});run();
+})();
 </script></body></html>
