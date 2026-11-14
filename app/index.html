@@ -169,7 +169,6 @@ header::before{text-shadow:0 0 11px #b0694aa8,2px 2px 0 #000!important}
 .cx .tip{display:none;position:absolute;z-index:5;white-space:nowrap;background:#0a1a21;border:1px solid #2F6272;border-radius:6px;padding:6px 9px;font-size:12px;line-height:1.5;color:#E8DCC6;box-shadow:0 6px 18px #000a}
 .cx .tip b{display:block;font-weight:700;color:#A4B6B6;font-size:11px;letter-spacing:.04em;margin-bottom:1px}
 .cx .tip span{display:block}.cx .tip i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}.cx .tip em{font-style:normal;font-weight:700;margin-left:4px}
-.cx .vl{position:absolute;font-size:11px;font-weight:700;color:#E8DCC6;text-shadow:0 1px 2px #000,0 0 6px #000;white-space:nowrap}
 </style></head><body>
 <header><div><small class="brand">HeroArc</small><small id="date"></small><h1 id="ttl">Today</h1></div><small id="upd"></small></header>
 <div class="nav"><button id="prev" aria-label="Previous day">‹</button><div class="mid"><input type="date" id="pick"><button class="today" id="tdy">Today</button></div><button id="next" aria-label="Next day">›</button></div>
@@ -277,16 +276,6 @@ new MutationObserver(go).observe(document.getElementById('app'),{childList:true}
   const hds=keys.map(k=>{const e=document.createElement('div');e.className='hd';e.style.borderColor=SER[k].col;e.style.setProperty('--c',SER[k].col);ov.appendChild(e);return e});
   // persistent dots on every real data point
   keys.forEach(k=>win.forEach((p,i)=>{if(p[k]==null)return;const d=document.createElement('div');d.className='pt';d.style.left=(i/(n-1)*100)+'%';d.style.top=yp(p[k],rng[k].mn,rng[k].mx)+'%';d.style.background=SER[k].col;ov.appendChild(d)}));
-  // printed values on the weight line: high, low, latest
-  if(keys.length===1&&keys[0]==='weight'){
-   const idx=win.map((p,i)=>p.weight==null?-1:i).filter(i=>i>=0);
-   if(idx.length){
-    const hi=idx.reduce((a,b)=>win[b].weight>win[a].weight?b:a),lo=idx.reduce((a,b)=>win[b].weight<win[a].weight?b:a),last=idx[idx.length-1];
-    const lab=new Map();[[hi,'up'],[lo,'dn'],[last,'up']].forEach(([i,pos])=>{if(!lab.has(i))lab.set(i,pos)});
-    lab.forEach((pos,i)=>{const t=document.createElement('div');t.className='vl';t.textContent=win[i].weight.toFixed(1);
-     const x=i/(n-1)*100;t.style.left=x+'%';t.style.top=yp(win[i].weight,rng.weight.mn,rng.weight.mx)+'%';
-     t.style.transform=`translate(${x<9?'-4px':x>91?'calc(-100% + 4px)':'-50%'},${pos==='up'?'-150%':'55%'})`;ov.appendChild(t)});
-   }}
   function show(ev){
    const r=wrap.getBoundingClientRect();let f=(ev.clientX-r.left)/r.width;f=Math.max(0,Math.min(1,f));
    let best=-1,bd=9;win.forEach((p,i)=>{if(!keys.some(k=>p[k]!=null))return;const dd=Math.abs(i/(n-1)-f);if(dd<bd){bd=dd;best=i}});
