@@ -45,7 +45,18 @@ def build(read=None):
                 'steps': n(r[13]), 'activeKcal': n(r[14]), 'totalKcal': n(r[15]),
                 'weight': wt.get(d), 'kcalIn': round(nn[0]) if nn else None, 'protein': round(nn[1]) if nn else None}
     tn = nut.get(today, [0, 0, 0, 0])
-    return {'sample': False, 'days': hist,
+    # Workouts for the character's blade: one entry per day that has any Training Log row. No program is set up in this
+    # template, so the app's Training card stays hidden; only the weekly workout count is used.
+    tdays = {}
+    try:
+        for r in read("'Training Log'!A2:H2000"):
+            if r and isinstance(r[0], (int, float)):
+                r = (list(r) + [''] * 8)[:8]; tdays.setdefault(serial(r[0]), str(r[2] or '').strip() or None)
+    except Exception:
+        tdays = {}
+    training = {'program': {'workouts': [], 'keyLifts': []}, 'pending': [],
+                'log': [{'d': d, 'w': tdays[d], 's': 'done', 'lifts': {}, 't': ''} for d in sorted(tdays)[-120:]]}
+    return {'sample': False, 'training': training, 'days': hist,
       'goals': {'steps': steps_g, 'activeKcal': act_g, 'kcal': kcal_g, 'protein': round(prot_g)}, 'date': today,
       'updated': nw.strftime('%-I:%M %p ') + (nw.tzname() or ''), 'ouraDay': lastfull,
       'today': {'steps': (n(o[13]) or 0) if o else 0, 'stepsGoal': steps_g, 'activeKcal': (n(o[14]) or 0) if o else 0,

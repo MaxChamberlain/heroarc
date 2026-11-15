@@ -8,6 +8,8 @@ A private health dashboard for your phone. Your Oura ring, weight, food and trai
 
 ## What you get
 - Phone and desktop app: readiness, sleep, stress, activity, weight, calories and protein against your goals, energy balance (calories in minus Oura's calories out), weekly balance, and a 14-day sleep/readiness chart. Browse back up to 90 days.
+- A samurai in the header that forges itself from your last 7 days: helm = nights scoring 75+, armor = days near your protein goal, legs = days near your step goal, blade = workouts logged. Tap it to see what counts. Rest days and unlogged days never count against you.
+- Tap or drag along the weight and sleep charts to read the exact number for a day.
 - A Google Sheet with tabs: Settings, Oura, Nutrition Log, Weight Log, Training Log.
 - Scripts: `sync.py` (Oura to sheet to app), `log_food.py`, `log_weight.py`, `log_training.py`.
 
