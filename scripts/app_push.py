@@ -40,7 +40,7 @@ def build(read=None):
     for i in range(90):
         d = (nw.date() - dt.timedelta(days=i)).isoformat(); r = oura.get(d, [''] * 21); nn = nut.get(d)
         if any(n(r[j]) is not None for j in (1, 2, 13, 14, 15)) or (isinstance(r[20], str) and r[20]) or d in wt or nn:
-            hist[d] = {'sleep': n(r[1]), 'readiness': n(r[2]), 'sleepHours': n(r[4]), 'hrv': n(r[9]), 'bed': mins(r[16]), 'wake': mins(r[17]),
+            hist[d] = {'sleep': n(r[1]), 'readiness': n(r[2]), 'sleepHours': n(r[4]), 'hrv': n(r[9]), 'rhr': n(r[10]), 'bed': mins(r[16]), 'wake': mins(r[17]),
                 'stressMin': n(r[18]), 'recoverMin': n(r[19]), 'stressSummary': (r[20] if isinstance(r[20], str) and r[20] else None),
                 'steps': n(r[13]), 'activeKcal': n(r[14]), 'totalKcal': n(r[15]),
                 'weight': wt.get(d), 'kcalIn': round(nn[0]) if nn else None, 'protein': round(nn[1]) if nn else None}
@@ -62,7 +62,7 @@ def build(read=None):
       'today': {'steps': (n(o[13]) or 0) if o else 0, 'stepsGoal': steps_g, 'activeKcal': (n(o[14]) or 0) if o else 0,
         'totalKcal': (n(o[15]) if o else None), 'activeGoal': act_g,
         'kcalIn': round(tn[0]), 'kcalTarget': kcal_g, 'protein': round(tn[1]), 'proteinTarget': round(prot_g),
-        'readiness': n(L[2]), 'sleep': n(L[1]), 'sleepHours': n(L[4]), 'hrv': n(L[9]), 'bed': mins(L[16]), 'wake': mins(L[17]),
+        'readiness': n(L[2]), 'sleep': n(L[1]), 'sleepHours': n(L[4]), 'hrv': n(L[9]), 'rhr': n(L[10]), 'bed': mins(L[16]), 'wake': mins(L[17]),
         'weight': wt.get(lw)},
       'trend': trend}
 
