@@ -5,7 +5,7 @@ from config import env, set_env
 from google_auth import token, api
 if env('SHEET_ID'): raise SystemExit('SHEET_ID already set in .env; delete that line first if you really want a new sheet.')
 ts = token(); tz = env('TIMEZONE', 'UTC')
-names = ['Settings', 'Oura', 'Nutrition Log', 'Weight Log', 'Training Log']
+names = ['Settings', 'Oura', 'Nutrition Log', 'Weight Log', 'Training Log', 'Plan', 'Habits', 'Habit Log']
 r = api('POST', 'https://sheets.googleapis.com/v4/spreadsheets', ts, {
     'properties': {'title': 'HeroArc Health Log', 'timeZone': tz},
     'sheets': [{'properties': {'title': n}} for n in names]})
@@ -29,7 +29,10 @@ data = [
  {'range': 'Nutrition Log!A1:K1', 'values': [nut_h]},
  {'range': 'Nutrition Log!M1:P5', 'values': box},
  {'range': 'Weight Log!A1:D1', 'values': [['Date','Weight (lb)','7-day avg','Change vs prev day']]},
- {'range': 'Training Log!A1:H1', 'values': [['Date','Time','Workout','Exercise','Weight (lb)','Sets','Reps','Notes']]}]
+ {'range': 'Training Log!A1:J1', 'values': [['Date','Workout','Status','Lift','Direction','Max (lb)','Notes','Logged at','Event id','Reps']]},
+ {'range': 'Plan!A1:E1', 'values': [['Workout','Exercise','Sets','Key lift (x)','Order']]},
+ {'range': 'Habits!A1:C1', 'values': [['Habit','Id','Archive (x to hide)']]},
+ {'range': 'Habit Log!A1:E1', 'values': [['Date','Habit id','Done','Logged at','Event id']]}]
 x = api('POST', U + '/values:batchUpdate', ts, {'valueInputOption': 'USER_ENTERED', 'data': data})
 if 'error' in x: raise SystemExit(f'Write failed: {x}')
 def fmt(sheet, col, pattern, typ='DATE'):
@@ -40,7 +43,7 @@ reqs = [{'repeatCell': {'range': {'sheetId': ids[n], 'startRowIndex': 0, 'endRow
 reqs += [{'updateSheetProperties': {'properties': {'sheetId': ids[n], 'gridProperties': {'frozenRowCount': 1}}, 'fields': 'gridProperties.frozenRowCount'}} for n in names[1:]]
 reqs += [fmt('Oura', 0, 'yyyy-mm-dd'), fmt('Oura', 16, 'h:mm AM/PM', 'TIME'), fmt('Oura', 17, 'h:mm AM/PM', 'TIME'),
          fmt('Nutrition Log', 0, 'yyyy-mm-dd'), fmt('Nutrition Log', 1, 'h:mm AM/PM', 'TIME'),
-         fmt('Weight Log', 0, 'yyyy-mm-dd'), fmt('Training Log', 0, 'yyyy-mm-dd'), fmt('Training Log', 1, 'h:mm AM/PM', 'TIME')]
+         fmt('Weight Log', 0, 'yyyy-mm-dd'), fmt('Training Log', 0, 'yyyy-mm-dd'), fmt('Habit Log', 0, 'yyyy-mm-dd')]
 y = api('POST', U + ':batchUpdate', ts, {'requests': reqs})
 if 'error' in y: print('Formatting skipped (data is fine):', y)
 set_env('SHEET_ID', S)
