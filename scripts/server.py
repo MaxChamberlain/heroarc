@@ -140,8 +140,9 @@ class H(BaseHTTPRequestHandler):
         self.send_response(code); self.send_header('Content-Type', 'application/json'); self.send_header('Content-Length', str(len(b)))
         self.send_header('Cache-Control', 'no-store'); self.end_headers(); self.wfile.write(b)
     def authed(self):
-        h = self.headers.get('Authorization', '')
-        if h.startswith('Bearer ') and hmac.compare_digest(h[7:].encode(), KEY.encode()): return True
+        h = self.headers.get('Authorization', '').strip()
+        if h[:7].lower() == 'bearer ': h = h[7:].strip()   # "Bearer <key>", any case; a bare "<key>" works too
+        if h and hmac.compare_digest(h.encode(), KEY.encode()): return True
         self.reply(401, {'ok': False, 'error': 'unauthorized'}); return False
     def do_GET(self):
         p = urllib.parse.urlparse(self.path).path
