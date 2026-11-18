@@ -30,5 +30,9 @@ def set_env(k, v):
     open(ENV_PATH, 'w').write('\n'.join(out).rstrip('\n') + '\n')
     os.chmod(ENV_PATH, 0o600); os.environ[k] = str(v)
 
+# Where token files live. Defaults to the repo folder; on a server, point it at a persistent disk.
+DATA = env('HEROARC_DATA_DIR') or ROOT
+OURA_TOKENS = os.path.join(DATA, 'oura', 'tokens.json')
+
 TZ = ZoneInfo(env('TIMEZONE', 'UTC'))
 def now(): return dt.datetime.now(TZ)

@@ -73,7 +73,8 @@ class NoRedir(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *a, **k): return None
 op = urllib.request.build_opener(NoRedir)
 def code_for(hdr):
-    try: return op.open(urllib.request.Request(f'https://{host}/api/data', headers=hdr)).status
+    # Cloudflare blocks Python's default User-Agent with a 403 (error 1010) before Access runs.
+    try: return op.open(urllib.request.Request(f'https://{host}/api/data', headers={'User-Agent': 'heroarc-deploy/1.0', **hdr})).status
     except urllib.error.HTTPError as e: return e.code
 res = {'no login': code_for({}), 'forged header': code_for({'Cf-Access-Jwt-Assertion': 'fake'}), 'forged cookie': code_for({'Cookie': 'CF_Authorization=fake'})}
 for k, v in res.items(): print(f'gate {k}: {v} (want 302)')

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """One-time: connect YOUR Oura account to YOUR Oura developer app. Stores oura/tokens.json."""
 import json, os, time, secrets, urllib.parse, urllib.request, urllib.error
-from config import env, ROOT
+from config import env, OURA_TOKENS
 CID, SEC = env('OURA_CLIENT_ID', required=True), env('OURA_CLIENT_SECRET', required=True)
 REDIR = env('OURA_REDIRECT_URI', 'http://localhost:8080/callback')   # must match the developer portal EXACTLY
 SCOPES = 'email personal daily heartrate workout session spo2 tag stress'
@@ -22,6 +22,5 @@ try:
 except urllib.error.HTTPError as e:
     raise SystemExit(f'Oura said {e.code}: {e.read()[:200].decode()}\nUsual causes: redirect URI not identical to the developer portal, code already used/expired.')
 r['obtained_at'] = int(time.time())
-os.makedirs(os.path.join(ROOT, 'oura'), exist_ok=True)
-p = os.path.join(ROOT, 'oura', 'tokens.json'); json.dump(r, open(p, 'w')); os.chmod(p, 0o600)
+p = OURA_TOKENS; os.makedirs(os.path.dirname(p), exist_ok=True); json.dump(r, open(p, 'w')); os.chmod(p, 0o600)
 print('\nSaved Oura tokens. Next: python3 scripts/sync.py --days 60')

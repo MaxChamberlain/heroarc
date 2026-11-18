@@ -1,7 +1,7 @@
 """Google Sheets access with YOUR OWN OAuth refresh token (see auth_google.py)."""
 import json, time, os, urllib.request, urllib.parse, urllib.error
-from config import env, ROOT
-CACHE = os.path.join(ROOT, '.cache', 'google_token.json')
+from config import env, DATA
+CACHE = os.path.join(DATA, '.cache', 'google_token.json')
 
 def token(scope=None):
     try:

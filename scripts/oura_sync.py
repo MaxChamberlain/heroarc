@@ -1,8 +1,8 @@
 """Pull recent Oura data into the Oura tab (upsert by date), then push the app snapshot."""
 import json, time, os, datetime as dt, urllib.request, urllib.parse
-from config import env, ROOT, now
+from config import env, now, OURA_TOKENS
 from google_auth import token, api
-TOK = os.path.join(ROOT, 'oura', 'tokens.json')
+TOK = OURA_TOKENS
 UA = {'User-Agent': 'HeroArc/1.0'}
 
 def access():

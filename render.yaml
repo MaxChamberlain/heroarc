@@ -1,0 +1,54 @@
+# Render Blueprint for the HeroArc service (scripts/server.py).
+# Needs a paid instance (Starter) because it keeps a persistent disk: Oura's refresh token
+# changes every time it renews and must survive restarts and redeploys.
+services:
+  - type: web
+    name: heroarc
+    runtime: python
+    plan: starter
+    region: oregon
+    buildCommand: echo "standard library only, nothing to install"
+    startCommand: python3 scripts/server.py
+    healthCheckPath: /health
+    disk:
+      name: heroarc-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.6
+      - key: HEROARC_DATA_DIR
+        value: /var/data
+      - key: HEROARC_API_KEY
+        generateValue: true
+      - key: SYNC_EVERY_MIN
+        value: "15"
+      - key: SYNC_START_HOUR
+        value: "6"
+      - key: SYNC_END_HOUR
+        value: "22"
+      # Filled in on Render when you create the Blueprint (copy from your .env):
+      - key: TIMEZONE
+        sync: false
+      - key: SHEET_ID
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REFRESH_TOKEN
+        sync: false
+      - key: OURA_CLIENT_ID
+        sync: false
+      - key: OURA_CLIENT_SECRET
+        sync: false
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false
+      - key: CLOUDFLARE_API_TOKEN
+        sync: false
+      - key: OURA_TOKENS_JSON      # one-time seed: paste oura/tokens.json; delete after first successful boot
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN    # optional: sync failure alerts
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
