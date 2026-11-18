@@ -143,7 +143,10 @@ class H(BaseHTTPRequestHandler):
         h = self.headers.get('Authorization', '').strip()
         if h[:7].lower() == 'bearer ': h = h[7:].strip()   # "Bearer <key>", any case; a bare "<key>" works too
         if h and hmac.compare_digest(h.encode(), KEY.encode()): return True
-        self.reply(401, {'ok': False, 'error': 'unauthorized'}); return False
+        # Say what arrived (never the key itself) so a misconfigured client is easy to fix.
+        why = ('no Authorization header received (check the header name is exactly "Authorization")' if 'Authorization' not in self.headers
+               else f'key does not match (received {len(h)} characters, expected {len(KEY)})')
+        self.reply(401, {'ok': False, 'error': 'unauthorized: ' + why}); return False
     def do_GET(self):
         p = urllib.parse.urlparse(self.path).path
         if p == '/health': return self.reply(200, {'ok': True})
