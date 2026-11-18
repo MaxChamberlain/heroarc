@@ -7,7 +7,7 @@ Every request except GET /health needs:  Authorization: Bearer <HEROARC_API_KEY>
   GET  /today                   -> today's totals, goals and last sleep/readiness
   POST /food      {"meal","items","kcal","p","c","f", "conf"?, "source"?, "notes"?, "date"?, "time"?, "dry_run"?}
   POST /weight    {"lb", "date"?}
-  POST /training  {"workout","exercise","lb","sets","reps", "notes"?, "date"?, "time"?}
+  POST /training  {"workout", "status"?: done|partial|rest, "lift"?, "lb"?, "reps"?, "date"?}   (lift, lb, reps go together)
   POST /sync      {"days"?}
 Scripts run as argument lists (never through a shell), one at a time.
 
@@ -85,13 +85,22 @@ def food(b):
 def weight(b):
     return 'log_weight.py', when(b, [str(num(b, 'lb', 50, 700))])
 def training(b):
-    reps = b.get('reps')
-    if isinstance(reps, bool) or not isinstance(reps, (int, str)) or not re.match(r'^[0-9][0-9 ,/x-]{0,30}$', str(reps)): raise Bad('reps must be a number or like "8,8,6"')
-    a = [f"--workout={text(b, 'workout', n=60)}", f"--exercise={text(b, 'exercise', n=80)}",
-         f"--lb={num(b, 'lb', 0, 2000)}", f"--sets={int(num(b, 'sets', 1, 30))}", f'--reps={reps}']
-    v = text(b, 'notes', required=False)
-    if v: a.append(f'--notes={v}')
-    return 'log_training.py', when(b, a)
+    """Matches log_training.py: one workout per call, optionally with one lift's weight x reps."""
+    a = [f"--workout={text(b, 'workout', n=60)}"]
+    st = text(b, 'status', required=False, n=10)
+    if st:
+        if st.lower() not in ('done', 'partial', 'rest'): raise Bad('status must be done, partial or rest')
+        a.append(f'--status={st.lower()}')
+    lift = text(b, 'lift', required=False, n=80)
+    lb, reps = num(b, 'lb', 0, 2000, required=False), num(b, 'reps', 1, 100, required=False)
+    if lift or lb is not None or reps is not None:
+        if not (lift and lb is not None and reps is not None): raise Bad('give lift, lb and reps together, or none of them')
+        a += [f'--lift={lift}', f'--lb={lb}', f'--reps={int(reps)}']
+    d = b.get('date')
+    if d:
+        if not isinstance(d, str) or not DATE.match(d): raise Bad('date must look like YYYY-MM-DD')
+        a.append(f'--date={d}')
+    return 'log_training.py', a
 def sync_args(b):
     d = num(b, 'days', 1, 90, required=False)
     return 'sync.py', ['--days', str(int(d))] if d else []
