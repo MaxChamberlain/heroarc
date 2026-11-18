@@ -14,7 +14,7 @@ A private health dashboard for your phone. Your Oura ring, weight, food and trai
 - A hero character in the header that forges itself from your last 7 days: helm = nights scoring 75+, armor = days at 80% of your protein goal, legs = days near your step goal, blade = workouts logged. Tap it to see what counts. Rest days and unlogged days never count against you.
 - Tap or drag along the weight and sleep charts to read the exact number for a day.
 - Seven looks you can switch between with the round button at the bottom right: Night, Street Fighter, Cyberpunk, Gilded, Beige Box '84, Color Archive and E30 Cluster (analog gauges). The choice is remembered on each device.
-- A Google Sheet with tabs: Settings, Oura, Nutrition Log, Weight Log, Training Log, Plan, Habits, Habit Log.
+- A Google Sheet with tabs: Settings, Oura, Nutrition Log, Weight Log, Training Log, Plan, Habits, Habit Log, Mood Log. (If you set up before the Mood card existed, add a tab named Mood Log with headers Date, Time, Mood (1-5), Note, Logged at, Event id; the card stays empty until then.)
 - Scripts: `sync.py` (Oura to sheet to app, and your in-app edits to the sheet), `log_food.py`, `log_weight.py`, `log_training.py`.
 
 How edits in the app reach your sheet: the app never writes to Google. It drops each edit into a small queue on Cloudflare, and `sync.py` (run every 15 minutes) copies it into your sheet, rebuilds the snapshot and then clears the queue. An edit shows in the app straight away and lands in the sheet on the next sync.

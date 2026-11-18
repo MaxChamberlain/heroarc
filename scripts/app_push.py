@@ -53,7 +53,7 @@ def build(read=None, fmt_read=None):
     # an "add your first" prompt and the editors in the app create the rows.
     def _g(rng, mode='UNFORMATTED_VALUE'):
         return read(rng) if mode == 'UNFORMATTED_VALUE' else _fmt(rng)
-    training = habits = None
+    training = habits = mood = None
     try:
         import training as _T
         training = _T.snapshot_section(_g)
@@ -65,10 +65,15 @@ def build(read=None, fmt_read=None):
     except Exception as e:
         print('habits block skipped:', type(e).__name__, str(e)[:120])
     try:
+        import mood as _M
+        mood = _M.snapshot_section(_g, today=nw.date())
+    except Exception as e:
+        print('mood block skipped:', type(e).__name__, str(e)[:120])
+    try:
         gs = read('Settings!B7:B7'); goals_set = bool(gs and gs[0] and str(gs[0][0]).strip() == 'set')
     except Exception:
         goals_set = False
-    return {'sample': False, 'training': training, 'habits': habits, 'days': hist,
+    return {'sample': False, 'training': training, 'habits': habits, 'mood': mood, 'days': hist,
       'goals': {'steps': steps_g, 'activeKcal': act_g, 'kcal': kcal_g, 'protein': round(prot_g), 'goalsSet': goals_set}, 'date': today,
       'updated': nw.strftime('%-I:%M %p ') + (nw.tzname() or ''), 'ouraDay': lastfull,
       'today': {'steps': (n(o[13]) or 0) if o else 0, 'stepsGoal': steps_g, 'activeKcal': (n(o[14]) or 0) if o else 0,
@@ -90,7 +95,7 @@ def push(data):
 def drain_and_push():
     """Move edits made in the app (training taps, habit taps and edits, weight, goals, plan) from the small KV queue into the
     sheet, rebuild the snapshot, push it, and only then drop what was drained. Event ids make a re-run harmless."""
-    import training as T, habits as HB
+    import training as T, habits as HB, mood as MD
     from kvstore import kv
     S = env('SHEET_ID', required=True); ts = google_auth.token()
     U = f'https://sheets.googleapis.com/v4/spreadsheets/{S}/values/'
@@ -118,6 +123,11 @@ def drain_and_push():
             hhave = HB.known_ids(api('GET', U + q("'Habit Log'!A2:E20000") + '?valueRenderOption=UNFORMATTED_VALUE', ts).get('values', []))
             done['hab'] = HB.drain_begin(lambda rows: append('Habit Log', rows), hhave, kv)
     except Exception as e: print('habit drain failed:', type(e).__name__, str(e)[:120])
+    try:   # mood taps: append-only to the Mood Log tab
+        if MD.read_queue(kv):
+            mhave = MD.known_ids(api('GET', U + q("'Mood Log'!A2:F20000") + '?valueRenderOption=UNFORMATTED_VALUE', ts).get('values', []))
+            done['mood'] = MD.drain_begin(lambda rows: append('Mood Log', rows), mhave, kv)
+    except Exception as e: print('mood drain failed:', type(e).__name__, str(e)[:120])
     try:   # goals chosen in the app: written to Settings (what the app and the Today box read)
         gp = json.loads(kv('GET', 'goals_pending') or 'null')
         if gp and isinstance(gp, dict) and gp.get('id'):
@@ -160,6 +170,7 @@ def drain_and_push():
         try: fn()
         except Exception as e: print(label, 'queue cleanup failed:', type(e).__name__)
     if done.get('train'): _clean('training', lambda: T.drain_end(done['train'], kv))
+    if done.get('mood'): _clean('mood', lambda: MD.drain_end(done['mood'], kv))
     if done.get('hab'): _clean('habit', lambda: HB.drain_end(done['hab'], kv))
     if done.get('cfg'): _clean('habit config', lambda: HB.finish_config(done['cfg'], kv))
     if done.get('goals'): _clean('goals', lambda: (json.loads(kv('GET', 'goals_pending') or 'null') or {}).get('id') == done['goals'] and kv('PUT', 'goals_pending', 'null'))

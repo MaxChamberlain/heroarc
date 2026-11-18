@@ -10,6 +10,7 @@ export default {
     if (url.pathname === '/api/habits') return handleHabits(req, env);
     if (url.pathname === '/api/habit-config') return handleHabitConfig(req, env);
     if (url.pathname === '/api/goals') return handleGoals(req, env);
+    if (url.pathname === '/api/mood') return handleMood(req, env);
     if (url.pathname === '/api/weight') return handleWeight(req, env);
     if (url.pathname === '/api/plan') return handlePlan(req, env);
     if (url.pathname === '/api/data') {
@@ -29,6 +30,8 @@ export default {
         if (gp && validGoals(gp)) j.goalsPending = gp;
         const wp = await jget('weight_pending');
         if (Array.isArray(wp) && wp.length) j.weightPending = wp.filter(validWeight).slice(-60);
+        const mq = await jget('mood_pending');
+        if (mq && j.mood && Array.isArray(mq) && mq.length) j.mood.pending = mq.filter(validMood).slice(-60);
         const pp = await jget('plan_pending');
         if (pp && validPlan(pp)) j.planPending = pp;
         out = JSON.stringify(j);
@@ -165,6 +168,35 @@ async function handleGoals(req, env) {
   const rec = {id: ev.id, sex: ev.sex, age: ev.age, height: ev.height, weight: ev.weight, activity: ev.activity, goal: ev.goal, kcal: Math.round(ev.kcal), protein: Math.round(ev.protein), t: new Date().toISOString()};
   await env.HEALTH.put('goals_pending', JSON.stringify(rec));
   return new Response('{"ok":true}', {headers: {'content-type': 'application/json', 'cache-control': 'no-store'}});
+}
+
+// POST /api/mood : append one mood entry (1-5, optional note) to a small queue in KV. Same locks as /api/habits.
+// The local sync drains it into the 'Mood Log' tab; this route never touches the sheet. Entries are only ever added.
+const MOOD_LIMITS = {maxBody: 1024, maxQueue: 400};
+function validMood(ev) {
+  if (!ev || typeof ev !== 'object' || Array.isArray(ev)) return false;
+  if (typeof ev.id !== 'string' || !/^[A-Za-z0-9_-]{4,40}$/.test(ev.id)) return false;
+  if (typeof ev.d !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(ev.d) || isNaN(Date.parse(ev.d + 'T12:00:00Z'))) return false;
+  if (!Number.isInteger(ev.m) || ev.m < 1 || ev.m > 5) return false;
+  if (ev.n != null && (typeof ev.n !== 'string' || ev.n.length > 200)) return false;
+  return true;
+}
+async function handleMood(req, env) {
+  if (req.method !== 'POST') return new Response('Method not allowed', {status: 405});
+  if (req.headers.get('x-heroarc') !== '1') return new Response('Forbidden', {status: 403});
+  const origin = req.headers.get('origin');
+  if (origin && origin !== new URL(req.url).origin) return new Response('Forbidden', {status: 403});
+  const text = await req.text();
+  if (text.length > MOOD_LIMITS.maxBody) return new Response('Too large', {status: 413});
+  let ev; try { ev = JSON.parse(text); } catch (e) { return new Response('Bad JSON', {status: 400}); }
+  if (!validMood(ev)) return new Response('Invalid', {status: 422});
+  const rec = {id: ev.id, d: ev.d, m: ev.m, n: (ev.n || '').trim(), t: new Date().toISOString()};
+  let q = []; try { q = JSON.parse((await env.HEALTH.get('mood_pending')) || '[]'); } catch (e) { q = []; }
+  if (!Array.isArray(q)) q = [];
+  if (!q.some(x => x && x.id === rec.id)) q.push(rec);
+  q = q.slice(-MOOD_LIMITS.maxQueue);
+  await env.HEALTH.put('mood_pending', JSON.stringify(q));
+  return new Response(JSON.stringify({ok: true}), {headers: {'content-type': 'application/json', 'cache-control': 'no-store'}});
 }
 
 const WT_LIMITS = {maxBody: 512, maxQueue: 200};
