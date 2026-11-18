@@ -59,7 +59,7 @@ def sync(days=14):
     res = api('POST', U + '/values:batchUpdate', ts, {'valueInputOption': 'USER_ENTERED', 'data': data})
     out = res.get('error') or f'{len(data)} days upserted ({min(new)}..{max(new)})'
     try:
-        import app_push; app_push.safe_push()
+        import app_push; app_push.drain_and_push()
     except Exception as ex: out += f' | app push failed: {type(ex).__name__}: {ex}'
     return out
 

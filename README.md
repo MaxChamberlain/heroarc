@@ -7,13 +7,17 @@ A private health dashboard for your phone. Your Oura ring, weight, food and trai
 - **Your AI does the logging.** The scripts below are the "hands". Point your own AI assistant at this folder and have it run them when you text it a weight, a meal photo or a workout.
 
 ## What you get
-- Phone and desktop app: readiness, sleep, recovery (HRV and resting heart rate), activity, weight, calories and protein against your goals, energy balance (calories in minus Oura's calories out), weekly balance, and a 14-day sleep/readiness chart. Browse back up to 90 days.
-- A samurai in the header that forges itself from your last 7 days: helm = nights scoring 75+, armor = days near your protein goal, legs = days near your step goal, blade = workouts logged. Tap it to see what counts. Rest days and unlogged days never count against you.
+- Phone and desktop app: readiness, sleep, activity, weight, calories and protein against your goals, energy balance (calories in minus Oura's calories out), weekly balance, and a 14-day sleep/readiness chart. Browse back up to 90 days.
+- **Your own training plan, edited in the app.** The Training card starts empty. Tap Set up plan, name your workouts, add exercises with sets and reps, and star the lifts you want to track a max for. Log a workout with one tap (weight and reps for starred lifts). Changing the plan keeps your history.
+- **Your own habits, edited in the app.** Add up to 8 habits, rename, reorder, hide and restore them from the Habits card. Tick them off each day; the card shows a week strip, a month grid and a trend.
+- **Goals and weight in the app.** A calculator (Mifflin-St Jeor, an estimate and not medical advice) suggests calories and protein from your age, height, weight, activity and goal. You can accept it or type your own. Enter your weight from the Weight card.
+- A hero character in the header that forges itself from your last 7 days: helm = nights scoring 75+, armor = days at 80% of your protein goal, legs = days near your step goal, blade = workouts logged. Tap it to see what counts. Rest days and unlogged days never count against you.
 - Tap or drag along the weight and sleep charts to read the exact number for a day.
-- Six looks you can switch between with the round button at the bottom right of the app: Night, Street Fighter, Armani v2, Cyberpunk, Gilded and The System. The choice is remembered on each device.
-- A Recovery card (nightly HRV and resting heart rate against your own 30-night normal) replaces the Stress card, because Oura's stress data is often missing. It needs the Oura sheet's Lowest HR column, which the sync already fills.
-- A Google Sheet with tabs: Settings, Oura, Nutrition Log, Weight Log, Training Log.
-- Scripts: `sync.py` (Oura to sheet to app), `log_food.py`, `log_weight.py`, `log_training.py`.
+- Seven looks you can switch between with the round button at the bottom right: Night, Street Fighter, Cyberpunk, Gilded, Beige Box '84, Color Archive and E30 Cluster (analog gauges). The choice is remembered on each device.
+- A Google Sheet with tabs: Settings, Oura, Nutrition Log, Weight Log, Training Log, Plan, Habits, Habit Log, Mood Log. (If you set up before the Mood card existed, add a tab named Mood Log with headers Date, Time, Mood (1-5), Note, Logged at, Event id; the card stays empty until then.)
+- Scripts: `sync.py` (Oura to sheet to app, and your in-app edits to the sheet), `log_food.py`, `log_weight.py`, `log_training.py`.
+
+How edits in the app reach your sheet: the app never writes to Google. It drops each edit into a small queue on Cloudflare, and `sync.py` (run every 15 minutes) copies it into your sheet, rebuilds the snapshot and then clears the queue. An edit shows in the app straight away and lands in the sheet on the next sync.
 
 ## What you need first
 - A computer or small server that can run Python 3.9+ and Node 18+ (Node is only used to syntax-check the page before it is uploaded) and stay on, or run on a schedule.
@@ -68,7 +72,7 @@ Run these from the folder, or have your AI run them for you:
 ```
 python3 scripts/log_weight.py 189.2
 python3 scripts/log_food.py --meal Lunch --items "chicken, rice" --kcal 650 --p 48 --c 70 --f 14 --conf Medium --source "photo estimate"
-python3 scripts/log_training.py --workout "Push A" --exercise "Bench press" --lb 185 --sets 4 --reps 6
+python3 scripts/log_training.py --workout "Push" --lift "Bench Press" --lb 185 --reps 6
 ```
 Each one prints a single line saying what was logged. `log_food.py` and `log_weight.py` refresh the app straight away. `--dry-run` on `log_food.py` checks everything without writing.
 
