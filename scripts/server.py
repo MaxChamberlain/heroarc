@@ -53,7 +53,10 @@ def num(b, k, lo, hi, required=True):
     if v is None:
         if required: raise Bad(f'{k} is required')
         return None
-    if isinstance(v, bool) or not isinstance(v, (int, float)): raise Bad(f'{k} must be a number')
+    if isinstance(v, str):   # AI tool calls often send numbers as text: accept "450" or "12.5"
+        try: v = float(v.strip())
+        except ValueError: raise Bad(f'{k} must be a number')
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or v != v: raise Bad(f'{k} must be a number')
     if not lo <= v <= hi: raise Bad(f'{k}={v} is outside {lo}..{hi}')
     return v
 def text(b, k, required=True, n=300):
